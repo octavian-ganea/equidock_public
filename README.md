@@ -150,7 +150,7 @@ This test set was originally generated as a randomly sampled family-based subset
 using the file `src/test_all_methods/testset_random_transf.py`.
 
 
-Run `python -m src.inference_rigid`. 
+Run `python -m src.inference_rigid` to produce EquiDock's outputs for all test files. This will create a new directory of PDB output files in `test_sets_pdb/`.
 
 Get RMSD numbers from our papers using `python -m src.test_all_methods.eval_pdb_outputset`.
 
