@@ -78,7 +78,7 @@ python3 project/datasets/builder/prune_pairs.py project/datasets/DIPS/interim/pa
 ```
 
 Then, place file `utils/partition_dips.py` in the `DIPS/src/` folder, use the `pairs-postprocessed-*.txt` files for the actual data splits used in our paper,
-and run `python src/partition_dips.py  data/DIPS/interim/pairs-pruned/` from the DIPS folder. This creates the corresponding train/test/validation split 
+and run from the `DIPS/` folder the command: `python src/partition_dips.py  data/DIPS/interim/pairs-pruned/`. This creates the corresponding train/test/validation split 
 (again, using the exact splits in `pairs-postprocessed-*.txt`) of the 42K filtered pairs in DIPS. You should now have the following directory:
 
 ```angular2html
@@ -143,7 +143,12 @@ See `inference_rigid.py`.
 Our paper pretrained models are available in folder `checkpts/`. 
 
 # Test and reproduce paper's numbers
-Test sets used in our paper are given in `test_sets_pdb/`.
+Test sets used in our paper are given in `test_sets_pdb/`. Ground truth (bound) structures are in `test_sets_pdb/dips_test_random_transformed/complexes/`, 
+while unbound structures (i.e., randomly rotated and translated ligands and receptors) are in `test_sets_pdb/dips_test_random_transformed/random_transformed/` 
+and you should precisely use those for your predictions (or at least the ligands, while using the ground truth receptors like we do in `inference_rigid.py`). 
+This test set was originally generated as a randomly sampled family-based subset of complexes in `./DIPS/data/DIPS/interim/pairs-pruned/pairs-postprocessed-test.txt`
+using the file `src/test_all_methods/testset_random_transf.py`.
+
 
 Run `python -m src.inference_rigid`. 
 
