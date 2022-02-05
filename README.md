@@ -137,6 +137,13 @@ CUDA_VISIBLE_DEVICES=0 python -m src.train -hyper_search
 ```
 or just specify your own params if you don't want to do hyperparam search. This will create checkpoints, tensorboard logs (you can visualize with tensorboard) and will store all stdout/stderr in a log file. This will train a model on DIPS first and, then, fine-tune it on DB5. Use `-toy` to train on DB5 only.
 
+## Data splits
+In our paper, we used the train/validation/test splits given by the files
+```angular2html
+DIPS: DIPS/data/DIPS/interim/pairs-pruned/pairs-postprocessed-*.txt
+DB5: data/benchmark5.5/cv/cv_0/*.txt
+```
+
 ## Inference
 
 See `inference_rigid.py`.
