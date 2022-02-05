@@ -1,8 +1,11 @@
-# Source code for EquiDock (ICLR 2022)
+# Source code for EquiDock: Independent SE(3)-Equivariant Models for End-to-End Rigid Protein Docking (ICLR 2022)
+
+![EquiDock banner and concept](https://raw.githubusercontent.com/octavian-ganea/equidock_public/equidock.png)
+
 
 Please cite "Independent SE(3)-Equivariant Models for End-to-End Rigid Protein Docking", Ganea et. al, Spotlight @ ICLR 2022
 
-# Dependencies
+## Dependencies
 ```
 python==3.9.10
 numpy==1.22.1
@@ -18,26 +21,25 @@ joblib==1.1.0
 
 
 
-# DB5.5 data
+## DB5.5 data
 
-The raw DB5.5 dataset is placed in the `data` directory from the original source:
+The raw DB5.5 dataset was already placed in the `data` directory from the original source:
 ```
 https://zlab.umassmed.edu/benchmark/ or https://github.com/drorlab/DIPS
 ```
 The raw pdb files of DB5.5 dataset are in the directory `./data/benchmark5.5/structures`
 
-Then preprocess the raw data as follow to prepare data for rigid body docking:
+Then preprocess the raw data as follows to prepare data for rigid body docking:
 ```
 # prepare data for rigid body docking
 python preprocess_raw_data.py -n_jobs 40 -data db5 -graph_nodes residues -graph_cutoff 30 -graph_max_neighbor 10 -graph_residue_loc_is_alphaC -pocket_cutoff 8
 ```
 
-By default, `preprocess_raw_data.py` use 10 neighbor for each node when constructing
-the graph and uses only residues (coordinates being those of the alpha carbons). After running `preprocess_raw_data.py`, by default, you will get following 
+By default, `preprocess_raw_data.py` uses 10 neighbor for each node when constructing
+the graph and uses only residues (coordinates being those of the alpha carbons). After running `preprocess_raw_data.py` you will get following 
 ready-for-training data directory:
 
 ```
-# 10 fold style rigid body docking data with maxneighbor=10
 ./cache/db5_residues_maxneighbor_10_cutoff_30.0_pocketCut_8.0/cv_0/
 ```
 with files
@@ -48,9 +50,9 @@ label_train.pkl			ligand_graph_test.bin		ligand_graph_val.bin		receptor_graph_tr
 ```
 
 
-# DIPS data
+## DIPS data
 
-Download (see `https://github.com/drorlab/DIPS` and `https://github.com/amorehead/DIPS-Plus`) :
+Download the dataset (see `https://github.com/drorlab/DIPS` and `https://github.com/amorehead/DIPS-Plus`) :
 ```angular2html
 mkdir -p ./DIPS/raw/pdb
 
@@ -78,7 +80,7 @@ python3 project/datasets/builder/prune_pairs.py project/datasets/DIPS/interim/pa
 ```
 
 Then, place file `utils/partition_dips.py` in the `DIPS/src/` folder, use the `pairs-postprocessed-*.txt` files for the actual data splits used in our paper,
-and run from the `DIPS/` folder the command: `python src/partition_dips.py  data/DIPS/interim/pairs-pruned/`. This creates the corresponding train/test/validation split 
+and run from the `DIPS/` folder the command: `python src/partition_dips.py  data/DIPS/interim/pairs-pruned/`. This creates the corresponding train/test/validation splits 
 (again, using the exact splits in `pairs-postprocessed-*.txt`) of the 42K filtered pairs in DIPS. You should now have the following directory:
 
 ```angular2html
@@ -118,7 +120,7 @@ Then preprocess the raw data as follow to prepare data for rigid body docking:
 python preprocess_raw_data.py -n_jobs 60 -data dips -graph_nodes residues -graph_cutoff 30 -graph_max_neighbor 10 -graph_residue_loc_is_alphaC -pocket_cutoff 8 -data_fraction 1.0
 ```
 
-and run the same steps as for DB5. You should now obtain the following cache data directory:
+You should now obtain the following cache data directory:
 ```angular2html
 $ ls cache/dips_residues_maxneighbor_10_cutoff_30.0_pocketCut_8.0/cv_0/
 label_test.pkl		     ligand_graph_val.bin		  receptor_graph_frac_1.0_train.bin
@@ -128,21 +130,21 @@ label_frac_1.0_train.pkl   ligand_graph_test.bin	      receptor_graph_val.bin
 
 
 
-# Training
-On GPU (works also on CPU, but it's super slow):
+## Training
+On GPU (works also on CPU, but it's very slow):
 ```angular2html
 CUDA_VISIBLE_DEVICES=0 python -m src.train -hyper_search
 ```
 or just specify your own params if you don't want to do hyperparam search. This will create checkpoints, tensorboard logs (you can visualize with tensorboard) and will store all stdout/stderr in a log file. This will train a model on DIPS first and, then, fine-tune it on DB5. Use `-toy` to train on DB5 only.
 
-# Inference
+## Inference
 
 See `inference_rigid.py`.
 
-# Pretrained models
+## Pretrained models
 Our paper pretrained models are available in folder `checkpts/`. 
 
-# Test and reproduce paper's numbers
+## Test and reproduce paper's numbers
 Test sets used in our paper are given in `test_sets_pdb/`. Ground truth (bound) structures are in `test_sets_pdb/dips_test_random_transformed/complexes/`, 
 while unbound structures (i.e., randomly rotated and translated ligands and receptors) are in `test_sets_pdb/dips_test_random_transformed/random_transformed/` 
 and you should precisely use those for your predictions (or at least the ligands, while using the ground truth receptors like we do in `inference_rigid.py`). 
@@ -150,11 +152,9 @@ This test set was originally generated as a randomly sampled family-based subset
 using the file `src/test_all_methods/testset_random_transf.py`.
 
 
-Run `python -m src.inference_rigid` to produce EquiDock's outputs for all test files. This will create a new directory of PDB output files in `test_sets_pdb/`.
+Run `python -m src.inference_rigid` to produce EquiDock's outputs for all test files. This will create a new directory of PDB output files in `test_sets_pdb/`. 
 
-Get RMSD numbers from our papers using `python -m src.test_all_methods.eval_pdb_outputset`.
-
-Baselines' output PDB files are also provided in  `test_sets_pdb/`
+Get RMSD numbers from our papers using `python -m src.test_all_methods.eval_pdb_outputset`. You can use this script to evaluate all other baselines. Baselines' output PDB files are also provided in  `test_sets_pdb/`
 
 
 
