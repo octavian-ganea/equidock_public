@@ -1,6 +1,6 @@
 # Source code for EquiDock: Independent SE(3)-Equivariant Models for End-to-End Rigid Protein Docking (ICLR 2022)
 
-![EquiDock banner and concept](https://raw.githubusercontent.com/octavian-ganea/equidock_public/equidock.png)
+![EquiDock banner and concept](https://github.com/octavian-ganea/equidock_public/blob/main/equidock.png)
 
 
 Please cite "Independent SE(3)-Equivariant Models for End-to-End Rigid Protein Docking", Ganea et. al, Spotlight @ ICLR 2022
