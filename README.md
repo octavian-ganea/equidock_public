@@ -149,7 +149,8 @@ DB5: data/benchmark5.5/cv/cv_0/*.txt
 See `inference_rigid.py`.
 
 ## Pretrained models
-Our paper pretrained models are available in folder `checkpts/`. 
+Our paper pretrained models are available in folder `checkpts/`. By loading those (as in `inference_rigid.py`), you can also see 
+which hyperparameters were used in those models (or directly from their names).
 
 ## Test and reproduce paper's numbers
 Test sets used in our paper are given in `test_sets_pdb/`. Ground truth (bound) structures are in `test_sets_pdb/dips_test_random_transformed/complexes/`, 
