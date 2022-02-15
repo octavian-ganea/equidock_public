@@ -3,7 +3,16 @@
 ![EquiDock banner and concept](https://github.com/octavian-ganea/equidock_public/blob/main/equidock.png)
 
 
-Please cite "Independent SE(3)-Equivariant Models for End-to-End Rigid Protein Docking", Ganea et. al, Spotlight @ ICLR 2022
+Please cite
+```angular2html
+@article{ganea2021independent,
+  title={Independent SE (3)-Equivariant Models for End-to-End Rigid Protein Docking},
+  author={Ganea, Octavian-Eugen and Huang, Xinyuan and Bunne, Charlotte and Bian, Yatao and Barzilay, Regina and Jaakkola, Tommi and Krause, Andreas},
+  journal={arXiv preprint arXiv:2111.07786},
+  year={2021}
+}
+```
+
 
 ## Dependencies
 ```
