@@ -15,6 +15,7 @@ Please cite
 
 
 ## Dependencies
+Current code works on Linux/Mac OSx only, you need to modify file paths to work on Windows.
 ```
 python==3.9.10
 numpy==1.22.1
