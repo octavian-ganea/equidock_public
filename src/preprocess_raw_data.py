@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
     num_splits = 1
     if args['data'] == 'db5':
-        num_splits = 3
+        num_splits = 1
 
 
     for i in range(num_splits):
