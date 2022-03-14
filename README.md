@@ -175,7 +175,7 @@ Run `python -m src.inference_rigid` to produce EquiDock's outputs for all test f
 Get RMSD numbers from our papers using `python -m src.test_all_methods.eval_pdb_outputset`. You can use this script to evaluate all other baselines. Baselines' output PDB files are also provided in  `test_sets_pdb/`
 
 ### Note on steric clashes
-Some clashes are possible in our model and we are working on this issue. Our current solution is described here: https://github.com/octavian-ganea/equidock_public/issues/5, see `inference_rigid.py#L19`. 
+Some clashes are possible in our model and we are working on mitigating this issue. Our current solution is a postprocessing clash removal step in `inference_rigid.py#L19`. Output files for DB5 are in `test_sets_pdb/db5_equidock_no_clashes_results/`. 
 
 
 

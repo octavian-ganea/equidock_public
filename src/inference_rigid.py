@@ -14,11 +14,14 @@ from src.utils.zero_copy_from_numpy import *
 from src.utils.io import create_dir
 
 
-dataset = 'dips'
+dataset = 'db5'
 method_name = 'equidock'
-remove_clashes = False  # Set to true if you want to remove (most of the) steric clashes. Will increase run time.
+remove_clashes = True  # Set to true if you want to remove (most of the) steric clashes. Will increase run time.
 if remove_clashes:
-    method_name = method_name + '_no_residue_clashes'
+    method_name = method_name + '_no_clashes'
+    print('Inference with postprocessing to remove clashes')
+else:
+    print('Inference without any postprocessing to remove clashes')
 
 
 # Ligand residue locations: a_i in R^3. Receptor: b_j in R^3
@@ -206,12 +209,16 @@ def main(args):
         if remove_clashes:
             non_int_loss_item = 100.
             it = 0
-            while non_int_loss_item > 0.5 and it < 10000:
+            while non_int_loss_item > 0.5 and it < 2000:
                 non_int_loss = compute_body_intersection_loss(ligand_th, gt_receptor_nodes_coors, sigma=8, surface_ct=8)
                 non_int_loss_item = non_int_loss.item()
                 eta = 1e-3
                 if non_int_loss < 2.:
                     eta = 1e-4
+                if it > 1500:
+                    eta = 1e-2
+                if it % 100 == 0:
+                    print(it, ' ' , non_int_loss_item)
                 non_int_loss.backward()
                 translation_finetune = translation_finetune - eta * translation_finetune.grad.detach()
                 translation_finetune = torch.tensor(translation_finetune, requires_grad=True)
