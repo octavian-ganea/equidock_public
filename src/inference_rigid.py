@@ -1,4 +1,7 @@
 import os
+
+import torch
+
 os.environ['DGLBACKEND'] = 'pytorch'
 
 from datetime import datetime as dt
@@ -11,8 +14,60 @@ from src.utils.zero_copy_from_numpy import *
 from src.utils.io import create_dir
 
 
-dataset = 'db5'
+dataset = 'dips'
 method_name = 'equidock'
+remove_clashes = False  # Set to true if you want to remove (most of the) steric clashes. Will increase run time.
+if remove_clashes:
+    method_name = method_name + '_no_residue_clashes'
+
+
+# Ligand residue locations: a_i in R^3. Receptor: b_j in R^3
+# Ligand: G_l(x) = -sigma * ln( \sum_i  exp(- ||x - a_i||^2 / sigma)  ), same for G_r(x)
+# Ligand surface: x such that G_l(x) = surface_ct
+# Other properties: G_l(a_i) < 0, G_l(x) = infinity if x is far from all a_i
+# Intersection of ligand and receptor: points x such that G_l(x) < surface_ct && G_r(x) < surface_ct
+# Intersection loss: IL = \avg_i max(0, surface_ct - G_r(a_i)) + \avg_j max(0, surface_ct - G_l(b_j))
+def G_fn(protein_coords, x, sigma):
+    # protein_coords: (n,3) ,  x: (m,3), output: (m,)
+    e = torch.exp(- torch.sum((protein_coords.view(1, -1, 3) - x.view(-1,1,3)) ** 2, dim=2) / float(sigma) )  # (m, n)
+    return - sigma * torch.log(1e-3 +  e.sum(dim=1) )
+
+
+def compute_body_intersection_loss(model_ligand_coors_deform, bound_receptor_repres_nodes_loc_array, sigma = 25., surface_ct=10.):
+    assert model_ligand_coors_deform.shape[1] == 3
+    loss = torch.mean( torch.clamp(surface_ct - G_fn(bound_receptor_repres_nodes_loc_array, model_ligand_coors_deform, sigma), min=0) ) + \
+           torch.mean( torch.clamp(surface_ct - G_fn(model_ligand_coors_deform, bound_receptor_repres_nodes_loc_array, sigma), min=0) )
+    return loss
+
+
+def get_rot_mat(euler_angles):
+    roll = euler_angles[0]
+    yaw = euler_angles[1]
+    pitch = euler_angles[2]
+
+    tensor_0 = torch.zeros([])
+    tensor_1 = torch.ones([])
+    cos = torch.cos
+    sin = torch.sin
+
+    RX = torch.stack([
+        torch.stack([tensor_1, tensor_0, tensor_0]),
+        torch.stack([tensor_0, cos(roll), -sin(roll)]),
+        torch.stack([tensor_0, sin(roll), cos(roll)])]).reshape(3, 3)
+
+    RY = torch.stack([
+        torch.stack([cos(pitch), tensor_0, sin(pitch)]),
+        torch.stack([tensor_0, tensor_1, tensor_0]),
+        torch.stack([-sin(pitch), tensor_0, cos(pitch)])]).reshape(3, 3)
+
+    RZ = torch.stack([
+        torch.stack([cos(yaw), -sin(yaw), tensor_0]),
+        torch.stack([sin(yaw), cos(yaw), tensor_0]),
+        torch.stack([tensor_0, tensor_0, tensor_1])]).reshape(3, 3)
+
+    R = torch.mm(RZ, RY)
+    R = torch.mm(R, RX)
+    return R
 
 
 
@@ -68,11 +123,13 @@ def main(args):
 
     pdb_files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f)) and f.endswith('.pdb')]
     for file in pdb_files:
+
         if not file.endswith('_l_b.pdb'):
             continue
         ll = len('_l_b.pdb')
         ligand_filename = os.path.join(input_dir, file[:-ll] + '_l_b' + '.pdb')
         receptor_filename = os.path.join(ground_truth_dir, file[:-ll] + '_r_b' + '_COMPLEX.pdb')
+        gt_ligand_filename = os.path.join(ground_truth_dir, file[:-ll] + '_l_b' + '_COMPLEX.pdb')
         out_filename = file[:-ll] + '_l_b' + '_' + method_name.upper() + '.pdb'
 
         print(' inference on file = ', ligand_filename)
@@ -83,6 +140,17 @@ def main(args):
         ppdb_ligand = PandasPdb().read_pdb(ligand_filename)
 
         unbound_ligand_all_atoms_pre_pos = ppdb_ligand.df['ATOM'][['x_coord', 'y_coord', 'z_coord']].to_numpy().squeeze().astype(np.float32)
+
+
+        def get_nodes_coors_numpy(filename, all_atoms=False):
+            df = PandasPdb().read_pdb(filename).df['ATOM']
+            if not all_atoms:
+                return torch.from_numpy(df[df['atom_name'] == 'CA'][['x_coord', 'y_coord', 'z_coord']].to_numpy().squeeze().astype(np.float32))
+            return torch.from_numpy(df[['x_coord', 'y_coord', 'z_coord']].to_numpy().squeeze().astype(np.float32))
+
+        gt_ligand_nodes_coors = get_nodes_coors_numpy(gt_ligand_filename, all_atoms=True)
+        gt_receptor_nodes_coors = get_nodes_coors_numpy(receptor_filename, all_atoms=True)
+        initial_ligand_nodes_coors = get_nodes_coors_numpy(ligand_filename, all_atoms=True)
 
 
 
@@ -116,24 +184,49 @@ def main(args):
         # Create a batch of a single DGL graph
         batch_hetero_graph = batchify_and_create_hetero_graphs_inference(ligand_graph, receptor_graph)
 
-        with torch.no_grad():
-            batch_hetero_graph = batch_hetero_graph.to(args['device'])
-            model_ligand_coors_deform_list, \
-            model_keypts_ligand_list, model_keypts_receptor_list, \
-            all_rotation_list, all_translation_list = model(batch_hetero_graph, epoch=0)
+        batch_hetero_graph = batch_hetero_graph.to(args['device'])
+        model_ligand_coors_deform_list, \
+        model_keypts_ligand_list, model_keypts_receptor_list, \
+        all_rotation_list, all_translation_list = model(batch_hetero_graph, epoch=0)
 
 
-            rotation = all_rotation_list[0].detach().cpu().numpy()
-            translation = all_translation_list[0].detach().cpu().numpy()
+        rotation = all_rotation_list[0].detach().cpu().numpy()
+        translation = all_translation_list[0].detach().cpu().numpy()
 
-            new_residues = (rotation @ bound_ligand_repres_nodes_loc_clean_array.T).T+translation
-            assert np.linalg.norm(new_residues - model_ligand_coors_deform_list[0].detach().cpu().numpy()) < 1e-1
+        new_residues = (rotation @ bound_ligand_repres_nodes_loc_clean_array.T).T+translation
+        assert np.linalg.norm(new_residues - model_ligand_coors_deform_list[0].detach().cpu().numpy()) < 1e-1
 
-            unbound_ligand_new_pos = (rotation @ unbound_ligand_all_atoms_pre_pos.T).T+translation
+        unbound_ligand_new_pos = (rotation @ unbound_ligand_all_atoms_pre_pos.T).T+translation
 
-            ppdb_ligand.df['ATOM'][['x_coord', 'y_coord', 'z_coord']] = unbound_ligand_new_pos
-            unbound_ligand_save_filename = os.path.join(output_dir, out_filename)
-            ppdb_ligand.to_pdb(path=unbound_ligand_save_filename, records=['ATOM'], gz=False)
+        euler_angles_finetune = torch.zeros([3], requires_grad=True)
+        translation_finetune = torch.zeros([3], requires_grad=True)
+        ligand_th = (get_rot_mat(euler_angles_finetune) @ torch.from_numpy(unbound_ligand_new_pos).T).T + translation_finetune
+
+        ## Optimize the non-intersection loss:
+        if remove_clashes:
+            non_int_loss_item = 100.
+            it = 0
+            while non_int_loss_item > 0.5 and it < 10000:
+                non_int_loss = compute_body_intersection_loss(ligand_th, gt_receptor_nodes_coors, sigma=8, surface_ct=8)
+                non_int_loss_item = non_int_loss.item()
+                eta = 1e-3
+                if non_int_loss < 2.:
+                    eta = 1e-4
+                non_int_loss.backward()
+                translation_finetune = translation_finetune - eta * translation_finetune.grad.detach()
+                translation_finetune = torch.tensor(translation_finetune, requires_grad=True)
+
+                euler_angles_finetune = euler_angles_finetune - eta * euler_angles_finetune.grad.detach()
+                euler_angles_finetune = torch.tensor(euler_angles_finetune, requires_grad=True)
+
+                ligand_th = (get_rot_mat(euler_angles_finetune) @ torch.from_numpy(unbound_ligand_new_pos).T).T + translation_finetune
+
+                it += 1
+
+
+        ppdb_ligand.df['ATOM'][['x_coord', 'y_coord', 'z_coord']] = ligand_th.detach().numpy() # unbound_ligand_new_pos
+        unbound_ligand_save_filename = os.path.join(output_dir, out_filename)
+        ppdb_ligand.to_pdb(path=unbound_ligand_save_filename, records=['ATOM'], gz=False)
 
         end = dt.now()
         time_list.append((end-start).total_seconds())
