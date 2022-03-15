@@ -14,7 +14,7 @@ from src.utils.zero_copy_from_numpy import *
 from src.utils.io import create_dir
 
 
-dataset = 'db5'
+dataset = 'dips'
 method_name = 'equidock'
 remove_clashes = True  # Set to true if you want to remove (most of the) steric clashes. Will increase run time.
 if remove_clashes:

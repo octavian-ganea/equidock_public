@@ -111,4 +111,4 @@ def compute_all_test_rmsd(dataset, method):
 
 ## Run this to get the results from our paper.
 if __name__ == "__main__":
-    compute_all_test_rmsd('db5', 'equidock') # dataset: db5 or dips; methods: equidock, attract, patchdock, cluspro, hdock
+    compute_all_test_rmsd('dips', 'equidock') # dataset: db5 or dips; methods: equidock, attract, patchdock, cluspro, hdock
