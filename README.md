@@ -124,7 +124,11 @@ a4  av	bm  cd	d4  dv	em  fd	g4  gv	hm  id	j4  jv	km  ld	m4  mv	nm  od	p4  pr				
 a5  aw	bn  ce	d5  dw	en  fe	g5  gw	hn  ie	j5  jw	kn  le	m5  mw	nn  oe	p5  ps				   qj  ra  s1  ss  tj  ua  v1  vs  wj  xa  y1  ys  zj
 ```
 
-Then preprocess the raw data as follow to prepare data for rigid body docking:
+###Note:
+The raw data `DIPS/data/DIPS/interim/pairs-pruned/` can also be downloaded from https://www.dropbox.com/s/sqknqofy58nlosh/DIPS.zip?dl=0 
+
+Finally, preprocess the raw data as follow to prepare data for rigid body docking:
+
 ```
 # prepare data for rigid body docking
 python preprocess_raw_data.py -n_jobs 60 -data dips -graph_nodes residues -graph_cutoff 30 -graph_max_neighbor 10 -graph_residue_loc_is_alphaC -pocket_cutoff 8 -data_fraction 1.0

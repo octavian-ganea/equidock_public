@@ -16,7 +16,7 @@ from src.utils.io import create_dir
 
 dataset = 'dips'
 method_name = 'equidock'
-remove_clashes = True  # Set to true if you want to remove (most of the) steric clashes. Will increase run time.
+remove_clashes = False  # Set to true if you want to remove (most of the) steric clashes. Will increase run time.
 if remove_clashes:
     method_name = method_name + '_no_clashes'
     print('Inference with postprocessing to remove clashes')
@@ -120,9 +120,12 @@ def main(args):
 
     input_dir = './test_sets_pdb/' + dataset + '_test_random_transformed/random_transformed/'
     ground_truth_dir = './test_sets_pdb/' + dataset + '_test_random_transformed/complexes/'
-
     output_dir = './test_sets_pdb/' + dataset + '_' + method_name + '_results/'
-    create_dir(output_dir)
+
+    input_dir = './test_sets_pdb/jean/'
+    ground_truth_dir = './test_sets_pdb/jean/'
+    output_dir = './test_sets_pdb/jean_out/'
+    # create_dir(output_dir)
 
     pdb_files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f)) and f.endswith('.pdb')]
     for file in pdb_files:
