@@ -271,15 +271,15 @@ class IEGMN_Layer(nn.Module):
                 self.log(torch.max(hetero_graph.edges['ll'].data['x_moment']), 'data[x_moment] = (x_i - x_j) * \phi^x(m_{i->j})')
 
 
-            hetero_graph.update_all(fn.copy_edge('x_moment', 'm'), fn.mean('m', 'x_update'),
+            hetero_graph.update_all(fn.copy_e('x_moment', 'm'), fn.mean('m', 'x_update'),
                                     etype=('ligand', 'll', 'ligand'))
-            hetero_graph.update_all(fn.copy_edge('x_moment', 'm'), fn.mean('m', 'x_update'),
+            hetero_graph.update_all(fn.copy_e('x_moment', 'm'), fn.mean('m', 'x_update'),
                                     etype=('receptor', 'rr', 'receptor'))
 
 
-            hetero_graph.update_all(fn.copy_edge('msg', 'm'), fn.mean('m', 'aggr_msg'),
+            hetero_graph.update_all(fn.copy_e('msg', 'm'), fn.mean('m', 'aggr_msg'),
                                     etype=('ligand', 'll', 'ligand'))
-            hetero_graph.update_all(fn.copy_edge('msg', 'm'), fn.mean('m', 'aggr_msg'),
+            hetero_graph.update_all(fn.copy_e('msg', 'm'), fn.mean('m', 'aggr_msg'),
                                     etype=('receptor', 'rr', 'receptor'))
 
 
